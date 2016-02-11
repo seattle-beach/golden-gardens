@@ -31,7 +31,8 @@ describe 'ServiceTester' do
 
     it 'should request the correct URL' do
       uri = URI('http://example.com/echo/foo')
-      expect(@http).to receive(:get).with(uri)
+      response = Net::HTTPResponse.new(1.0, 200, 'OK') # Fairly arbitrary
+      expect(@http).to receive(:get).with(uri).and_return(response)
       @subject.validate(@contract)
     end
 
@@ -45,8 +46,21 @@ describe 'ServiceTester' do
 
         it 'should succeed' do
           result = @subject.validate(@contract)
-          expect(result).to eq(true)
+          expect(result.ok?).to eq(true)
         end
+      end
+    end
+
+    describe 'When the service returns a non-200 response' do
+      before do
+        response = Net::HTTPResponse.new(1.0, 500, 'Nope!')
+        allow(@http).to receive(:get).and_return(response)
+      end
+
+      it 'should fail' do
+        result = @subject.validate(@contract)
+        expect(result.ok?).to eq(false)
+        expect(result.errors).to eq(['Expected 200 status code but got 500'])
       end
     end
   end

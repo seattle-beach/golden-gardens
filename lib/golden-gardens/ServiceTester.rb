@@ -1,5 +1,6 @@
 require 'net/http'
 require_relative 'HttpWrapper'
+require_relative 'ContractValidationResult'
 
 class ServiceTester
   def initialize(endpoint, http = nil)
@@ -11,7 +12,12 @@ class ServiceTester
     path = contract['request']['path']
     uri = URI("#{@endpoint}#{path}")
     response = @http.get(uri)
-    p response
-    true
+    errors = []
+
+    if response.code != 200
+      errors.push("Expected 200 status code but got #{response.code}")
+    end
+
+    ContractValidationResult.new(errors)
   end
 end

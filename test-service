@@ -11,10 +11,16 @@ contract = JSON.parse(File.read(ARGV[0]))
 endpointRoot = ARGV[1]
 
 tester = ServiceTester.new(endpointRoot)
+result = tester.validate(contract)
 
-if tester.validate(contract)
+if result.ok?
   puts 'ok'
 else
-  $stderr.puts("Validation failed.") # TODO: why?
+  $stderr.puts("Validation failed:")
+
+  result.errors.each do |error|
+    $stderr.puts(error)
+  end
+
   exit(1)
 end
