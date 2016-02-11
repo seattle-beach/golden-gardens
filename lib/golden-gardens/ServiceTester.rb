@@ -18,13 +18,15 @@ class ServiceTester
       return result_for_error(e)
     end
 
-    errors = []
-
     if response.code != 200
-      errors.push("Expected 200 status code but got #{response.code}")
+      return ContractValidationResult.new(["Expected 200 status code but got #{response.code}"])
     end
 
-    ContractValidationResult.new(errors)
+    if response.content_type != 'application/json'
+      return ContractValidationResult.new(["Expected application/json but got #{response.content_type}"])
+    end
+
+    ContractValidationResult.new([])
   end
 
   @private

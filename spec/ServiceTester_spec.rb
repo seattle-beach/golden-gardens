@@ -20,18 +20,22 @@ describe 'ServiceTester' do
           }
         }
       }
-
     end
 
-    it 'should have mocks that work like we think' do
-      mock = double('a mock')
-      expect(mock).to receive(:frob).with('yo')
-      mock.frob('yo')
+    def response_with_code(code)
+      response = Net::HTTPResponse.new(1.0, code, 'OK')
+      response.body = "{'thing': 'foo'}"
+      response.content_type=('application/json')
+      response
+    end
+
+    def valid_response
+      response_with_code(200)
     end
 
     it 'should request the correct URL' do
       uri = URI('http://example.com/echo/foo')
-      response = Net::HTTPResponse.new(1.0, 200, 'OK') # Fairly arbitrary
+      response = valid_response
       expect(@http).to receive(:get).with(uri).and_return(response)
       @subject.validate(@contract)
     end
@@ -39,9 +43,7 @@ describe 'ServiceTester' do
     describe 'When the service returns a 200 response' do
       describe 'With the expected data' do
         before do
-          response = Net::HTTPResponse.new(1.0, 200, 'OK')
-          response.body = "{'thing': 'foo'}"
-          allow(@http).to receive(:get).and_return(response)
+          allow(@http).to receive(:get).and_return(valid_response)
         end
 
         it 'should succeed' do
@@ -53,7 +55,7 @@ describe 'ServiceTester' do
 
     describe 'When the service returns a non-200 response' do
       before do
-        response = Net::HTTPResponse.new(1.0, 500, 'Nope!')
+        response = response_with_code(500)
         allow(@http).to receive(:get).and_return(response)
       end
 
@@ -74,6 +76,20 @@ describe 'ServiceTester' do
         result = @subject.validate(@contract)
         expect(result.ok?).to eq(false)
         expect(result.errors).to eq(['Connection refused - connect(2) for "example.com" port 80 (Errno::ECONNREFUSED)'])
+      end
+    end
+
+    describe 'When the content type is not JSON' do
+      before do
+        response = valid_response
+        response.content_type=('text/html')
+        allow(@http).to receive(:get).and_return(response)
+      end
+
+      it 'should fail' do
+        result = @subject.validate(@contract)
+        expect(result.ok?).to eq(false)
+        expect(result.errors).to eq(['Expected application/json but got text/html'])
       end
     end
   end
