@@ -54,6 +54,21 @@ describe 'ServiceTester' do
         end
       end
 
+      describe 'With a variant of application/json' do
+        before do
+          @subject.configure do |builder|
+            builder.adapter :test do |stub|
+              stub.get('/echo/foo') { |env| [200, {'content-type': 'application/json;charset=UTF-8'}, '{"thing": "foo"}']}
+            end
+          end
+        end
+
+        it 'should succeed' do
+          result = @subject.validate(@contract)
+          expect(result.ok?).to eq(true)
+        end
+      end
+
       describe 'With something other than the expected data' do
         before do
           @subject.configure do |builder|

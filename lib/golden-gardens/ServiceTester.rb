@@ -33,7 +33,7 @@ class ServiceTester
     end
 
     content_type = response.headers['content-type']
-    if content_type != 'application/json'
+    unless is_valid_content_type(content_type)
       return ContractValidationResult.new(["Expected application/json but got #{content_type}"])
     end
 
@@ -47,6 +47,10 @@ class ServiceTester
   end
 
   @private
+  def is_valid_content_type(content_type)
+    content_type == 'application/json' || content_type.start_with?('application/json;')
+  end
+
   def result_for_error(e)
     ContractValidationResult.new([e.message])
   end
