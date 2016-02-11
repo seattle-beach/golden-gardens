@@ -1,9 +1,9 @@
 require './lib/golden-gardens/ServiceTester'
+require 'faraday'
 
 describe 'ServiceTester' do
   before do
-    @http = double('HTTP wrapper')
-    @subject = ServiceTester.new('http://example.com', @http)
+    @subject = ServiceTester.new('http://localhost')
   end
 
   describe 'For a contract with no dependencies and a hardcoded response' do
@@ -33,17 +33,18 @@ describe 'ServiceTester' do
       response_with_code(200)
     end
 
-    it 'should request the correct URL' do
-      uri = URI('http://example.com/echo/foo')
-      response = valid_response
-      expect(@http).to receive(:get).with(uri).and_return(response)
-      @subject.validate(@contract)
+    it 'should use the correct base URL' do
+      expect(@subject.connection.url_prefix).to eq(URI('http://localhost/'))
     end
 
     describe 'When the service returns a 200 response' do
       describe 'With the expected data' do
         before do
-          allow(@http).to receive(:get).and_return(valid_response)
+          @subject.configure do |builder|
+            builder.adapter :test do |stub|
+              stub.get('/echo/foo') { |env| [200, {'content-type': 'application/json'}, "{'thing': 'foo'}"]}
+            end
+          end
         end
 
         it 'should succeed' do
@@ -55,8 +56,11 @@ describe 'ServiceTester' do
 
     describe 'When the service returns a non-200 response' do
       before do
-        response = response_with_code(500)
-        allow(@http).to receive(:get).and_return(response)
+        @subject.configure do |builder|
+          builder.adapter :test do |stub|
+            stub.get('/echo/foo') { |env| [500, {'content-type': 'application/json'}, "{'thing': 'foo'}"]}
+          end
+        end
       end
 
       it 'should fail' do
@@ -68,22 +72,27 @@ describe 'ServiceTester' do
 
     describe 'When there is a non-response connection error' do
       before do
-        msg = 'connect(2) for "example.com" port 80 (Errno::ECONNREFUSED)'
-        allow(@http).to receive(:get).and_raise(Errno::ECONNREFUSED.new(msg))
+        @subject.configure do |builder|
+          builder.adapter :test do |stub|
+            stub.get('/echo/foo') { |env| raise Faraday::ConnectionFailed.new('Connection failed')}
+          end
+        end
       end
 
       it 'should fail' do
         result = @subject.validate(@contract)
         expect(result.ok?).to eq(false)
-        expect(result.errors).to eq(['Connection refused - connect(2) for "example.com" port 80 (Errno::ECONNREFUSED)'])
+        expect(result.errors).to eq(['Connection failed'])
       end
     end
 
     describe 'When the content type is not JSON' do
       before do
-        response = valid_response
-        response.content_type=('text/html')
-        allow(@http).to receive(:get).and_return(response)
+        @subject.configure do |builder|
+          builder.adapter :test do |stub|
+            stub.get('/echo/foo') { |env| [200, {'content-type': 'text/html'}, "{'thing': 'foo'}"]}
+          end
+        end
       end
 
       it 'should fail' do

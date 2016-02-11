@@ -1,11 +1,21 @@
-require 'net/http'
-require_relative 'HttpWrapper'
+require 'faraday'
 require_relative 'ContractValidationResult'
 
 class ServiceTester
-  def initialize(endpoint, http = nil)
-    @http = http || HttpWrapper.new
+  def initialize(endpoint)
     @endpoint = endpoint
+  end
+
+  def connection=(conn)
+    @connection = conn
+  end
+
+  def connection
+    @connection ||= connect
+  end
+
+  def configure(&configurator)
+    @configurator = configurator
   end
 
   def validate(contract)
@@ -13,17 +23,18 @@ class ServiceTester
     uri = URI("#{@endpoint}#{path}")
 
     begin
-      response = @http.get(uri)
-    rescue StandardError => e
+      response = connection.get(uri)
+    rescue Faraday::ClientError => e
       return result_for_error(e)
     end
 
-    if response.code != 200
-      return ContractValidationResult.new(["Expected 200 status code but got #{response.code}"])
+    if response.status != 200
+      return ContractValidationResult.new(["Expected 200 status code but got #{response.status}"])
     end
 
-    if response.content_type != 'application/json'
-      return ContractValidationResult.new(["Expected application/json but got #{response.content_type}"])
+    content_type = response.headers['content-type']
+    if content_type != 'application/json'
+      return ContractValidationResult.new(["Expected application/json but got #{content_type}"])
     end
 
     ContractValidationResult.new([])
@@ -32,5 +43,15 @@ class ServiceTester
   @private
   def result_for_error(e)
     ContractValidationResult.new([e.message])
+  end
+
+  def connect
+    if @configurator
+      Faraday.new(:url => @endpoint) do |builder|
+        @configurator.call(builder)
+      end
+    else
+      Faraday.new(:url => @endpoint)
+    end
   end
 end
