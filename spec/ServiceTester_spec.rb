@@ -1,5 +1,6 @@
 require './lib/golden-gardens/ServiceTester'
 require 'faraday'
+require 'json'
 
 describe 'ServiceTester' do
   before do
@@ -42,7 +43,7 @@ describe 'ServiceTester' do
         before do
           @subject.configure do |builder|
             builder.adapter :test do |stub|
-              stub.get('/echo/foo') { |env| [200, {'content-type': 'application/json'}, "{'thing': 'foo'}"]}
+              stub.get('/echo/foo') { |env| [200, {'content-type': 'application/json'}, '{"thing": "foo"}']}
             end
           end
         end
@@ -52,13 +53,28 @@ describe 'ServiceTester' do
           expect(result.ok?).to eq(true)
         end
       end
+
+      describe 'With something other than the expected data' do
+        before do
+          @subject.configure do |builder|
+            builder.adapter :test do |stub|
+              stub.get('/echo/foo') { |env| [200, {'content-type': 'application/json'}, '{"thing": "bar"}']}
+            end
+          end
+        end
+
+        it 'should fail' do
+          result = @subject.validate(@contract)
+          expect(result.ok?).to eq(false)
+        end
+      end
     end
 
     describe 'When the service returns a non-200 response' do
       before do
         @subject.configure do |builder|
           builder.adapter :test do |stub|
-            stub.get('/echo/foo') { |env| [500, {'content-type': 'application/json'}, "{'thing': 'foo'}"]}
+            stub.get('/echo/foo') { |env| [500, {'content-type': 'application/json'}, '{"thing": "foo"}']}
           end
         end
       end
@@ -90,7 +106,7 @@ describe 'ServiceTester' do
       before do
         @subject.configure do |builder|
           builder.adapter :test do |stub|
-            stub.get('/echo/foo') { |env| [200, {'content-type': 'text/html'}, "{'thing': 'foo'}"]}
+            stub.get('/echo/foo') { |env| [200, {'content-type': 'text/html'}, '{"thing": "foo"}']}
           end
         end
       end
@@ -102,8 +118,4 @@ describe 'ServiceTester' do
       end
     end
   end
-
-  # TODO:
-  # Actually validate the JSON
-  # Handle non-JSON responses
 end

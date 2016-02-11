@@ -37,7 +37,13 @@ class ServiceTester
       return ContractValidationResult.new(["Expected application/json but got #{content_type}"])
     end
 
-    ContractValidationResult.new([])
+    data = JSON.parse(response.body)
+
+    if data == contract['response']['data']
+      ContractValidationResult.new([])
+    else
+      ContractValidationResult.new(['nope!'])
+    end
   end
 
   @private
