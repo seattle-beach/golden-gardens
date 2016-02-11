@@ -63,11 +63,22 @@ describe 'ServiceTester' do
         expect(result.errors).to eq(['Expected 200 status code but got 500'])
       end
     end
+
+    describe 'When there is a non-response connection error' do
+      before do
+        msg = 'connect(2) for "example.com" port 80 (Errno::ECONNREFUSED)'
+        allow(@http).to receive(:get).and_raise(Errno::ECONNREFUSED.new(msg))
+      end
+
+      it 'should fail' do
+        result = @subject.validate(@contract)
+        expect(result.ok?).to eq(false)
+        expect(result.errors).to eq(['Connection refused - connect(2) for "example.com" port 80 (Errno::ECONNREFUSED)'])
+      end
+    end
   end
 
   # TODO:
-  # Handle error responses
-  # Handle non-response error conditions
   # Actually validate the JSON
   # Handle non-JSON responses
 end
