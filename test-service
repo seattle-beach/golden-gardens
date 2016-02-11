@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+require 'json'
+require './ServiceTester'
+
+unless ARGV.length == 2
+  $stderr.puts("Usage: #{$0} contract-path endpoint-root-url")
+  exit(1)
+end
+
+contract = JSON.parse(File.read(ARGV[0]))
+endpointRoot = ARGV[1]
+
+tester = ServiceTester.new(endpointRoot)
+
+if tester.validate(contract)
+  puts 'ok'
+else
+  $stderr.puts("Validation failed.") # TODO: why?
+  exit(1)
+end

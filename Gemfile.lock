@@ -23,6 +23,7 @@ PLATFORMS
 DEPENDENCIES
   rake
   rspec
+  rspec-mocks
 
 BUNDLED WITH
    1.11.2
