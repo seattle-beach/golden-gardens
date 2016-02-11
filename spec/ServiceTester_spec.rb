@@ -1,4 +1,4 @@
-require './ServiceTester'
+require './lib/golden-gardens/ServiceTester'
 
 describe 'ServiceTester' do
   before do

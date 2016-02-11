@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 require 'json'
-require './ServiceTester'
+require './lib/golden-gardens/ServiceTester'
 
 unless ARGV.length == 2
   $stderr.puts("Usage: #{$0} contract-path endpoint-root-url")

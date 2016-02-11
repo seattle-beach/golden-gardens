@@ -1,5 +1,5 @@
 require 'net/http'
-require './HttpWrapper'
+require_relative 'HttpWrapper'
 
 class ServiceTester
   def initialize(endpoint, http = nil)
