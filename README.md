@@ -1,8 +1,3 @@
-== Setup ==
+# Deprecated!
 
-1. `bundle install`
-
-
-== Usage ==
-
-To run the tests: `bundle exec rake spec`
+Use https://github.com/pivotal/golden-gardens instead.
